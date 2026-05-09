@@ -6,6 +6,10 @@
 
 <h1 align="center">WebDistill</h1>
 
+<p align="center">
+  <a href="README.md">English</a> | <a href="README.zh-CN.md">中文</a>
+</p>
+
 <p align="center"><strong>AI Web Intelligence & Distillation Framework</strong></p>
 
 <p align="center">
