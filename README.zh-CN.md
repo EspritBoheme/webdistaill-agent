@@ -77,8 +77,8 @@ WebDistill 将任意公开网页转化为干净、结构化的知识：
 ### 安装
 
 ```bash
-git clone https://github.com/your-org/WebDistill.git
-cd WebDistill
+git clone https://github.com/EspritBoheme/webdistaill-agent.git
+cd webdistaill-agent
 pip install -r requirements.txt
 export OPENAI_API_KEY="sk-..."
 ```

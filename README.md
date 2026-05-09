@@ -75,8 +75,8 @@ It is **not** a web scraper. It is **AI information workflow infrastructure** â€
 ### Install
 
 ```bash
-git clone https://github.com/your-org/WebDistill.git
-cd WebDistill
+git clone https://github.com/EspritBoheme/webdistaill-agent.git
+cd webdistaill-agent
 pip install -r requirements.txt
 export OPENAI_API_KEY="sk-..."
 ```
