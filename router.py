@@ -7,12 +7,20 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Optional
 
-from cleaner import Cleaner
-from config.settings import Settings, get_settings
-from crawler import Crawler, CrawlResult
-from formatter import Formatter, FormattedOutput
-from parser import ContentParser, ParsedContent
-from summarizer import Summarizer, SummaryResult
+try:
+    from .cleaner import Cleaner
+    from .config.settings import Settings, get_settings
+    from .crawler import Crawler, CrawlResult
+    from .formatter import Formatter, FormattedOutput
+    from .parser import ContentParser, ParsedContent
+    from .summarizer import Summarizer, SummaryResult
+except ImportError:
+    from cleaner import Cleaner
+    from config.settings import Settings, get_settings
+    from crawler import Crawler, CrawlResult
+    from formatter import Formatter, FormattedOutput
+    from parser import ContentParser, ParsedContent
+    from summarizer import Summarizer, SummaryResult
 
 logger = logging.getLogger(__name__)
 
@@ -142,7 +150,7 @@ class Router:
         parser = ContentParser()
         task.parsed_content = parser.parse(
             task.cleaned_html,
-            source_url=task.url,
+            source_url=task.crawl_result.url,
         )
         return task
 
@@ -151,8 +159,8 @@ class Router:
         task.summary_result = summarizer.summarize(
             content=task.parsed_content.content,
             title=task.parsed_content.title,
-            url=task.url,
-            mode="technical" if task.mode == TaskMode.TECHNICAL else "default",
+            url=task.crawl_result.url,
+            mode="technical" if task.mode in (TaskMode.TECHNICAL, TaskMode.FULL) else "default",
         )
         return task
 

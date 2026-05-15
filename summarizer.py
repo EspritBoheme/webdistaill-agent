@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
-from openai import OpenAI
-
-from config.settings import SummarizerConfig
+try:
+    from .config.settings import SummarizerConfig
+except ImportError:
+    from config.settings import SummarizerConfig
 
 logger = logging.getLogger(__name__)
 
@@ -70,21 +71,19 @@ Return a JSON object:
 class SummaryResult:
     """Structured AI summary."""
     summary: str = ""
-    key_points: list[str] = None
-    topics: list[str] = None
-    technical_terms: list[str] = None
+    key_points: list[str] = field(default_factory=list)
+    topics: list[str] = field(default_factory=list)
+    technical_terms: list[str] = field(default_factory=list)
     content_type: str = ""
     reading_time_minutes: int = 0
     difficulty: str = ""
+    key_concepts: list[str] = field(default_factory=list)
+    code_languages: list[str] = field(default_factory=list)
+    api_references: list[str] = field(default_factory=list)
+    dependencies: list[str] = field(default_factory=list)
+    steps: list[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
     raw_response: str = ""
-
-    def __post_init__(self):
-        if self.key_points is None:
-            self.key_points = []
-        if self.topics is None:
-            self.topics = []
-        if self.technical_terms is None:
-            self.technical_terms = []
 
 
 class Summarizer:
@@ -92,7 +91,6 @@ class Summarizer:
 
     def __init__(self, config: Optional[SummarizerConfig] = None):
         self.config = config or SummarizerConfig()
-        self._client = OpenAI(api_key=self.config.api_key)
 
     def summarize(
         self,
@@ -112,6 +110,10 @@ class Summarizer:
         Returns:
             SummaryResult with structured summary data.
         """
+        if not self.config.api_key:
+            logger.warning("OPENAI_API_KEY is not set; returning extractive summary")
+            return self._extractive_summary(content)
+
         truncated = self._truncate(content)
         prompt_template = (
             TECHNICAL_PROMPT_TEMPLATE if mode == "technical"
@@ -126,7 +128,10 @@ class Summarizer:
         logger.info("Summarizing: title=%r, chars=%d", title, len(truncated))
 
         try:
-            response = self._client.chat.completions.create(
+            from openai import OpenAI
+
+            client = OpenAI(api_key=self.config.api_key)
+            response = client.chat.completions.create(
                 model=self.config.model,
                 messages=[
                     {"role": "system", "content": SYSTEM_PROMPT},
@@ -142,10 +147,22 @@ class Summarizer:
 
         except Exception as exc:
             logger.error("Summarization failed: %s", exc)
-            return SummaryResult(
-                summary=f"Summarization failed: {exc}",
-                raw_response="",
-            )
+            fallback = self._extractive_summary(content)
+            fallback.summary = f"AI summarization failed; extractive fallback used. {fallback.summary}"
+            return fallback
+
+    def _extractive_summary(self, text: str) -> SummaryResult:
+        sentences = [s.strip() for s in text.replace("\n", " ").split(".") if s.strip()]
+        summary = ". ".join(sentences[:3])
+        if summary:
+            summary += "."
+        words = text.split()
+        return SummaryResult(
+            summary=summary,
+            key_points=[sentence + "." for sentence in sentences[:5]],
+            reading_time_minutes=max(1, round(len(words) / 220)) if words else 0,
+            content_type="raw",
+        )
 
     def _truncate(self, text: str) -> str:
         if len(text) <= self.config.max_input_chars:
@@ -174,5 +191,11 @@ class Summarizer:
             content_type=data.get("content_type", ""),
             reading_time_minutes=data.get("reading_time_minutes", 0),
             difficulty=data.get("difficulty", ""),
+            key_concepts=data.get("key_concepts", []),
+            code_languages=data.get("code_languages", []),
+            api_references=data.get("api_references", []),
+            dependencies=data.get("dependencies", []),
+            steps=data.get("steps", []),
+            warnings=data.get("warnings", []),
             raw_response=raw,
         )

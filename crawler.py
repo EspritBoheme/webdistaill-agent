@@ -11,7 +11,10 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from config.settings import CrawlerConfig
+try:
+    from .config.settings import CrawlerConfig
+except ImportError:
+    from config.settings import CrawlerConfig
 
 logger = logging.getLogger(__name__)
 

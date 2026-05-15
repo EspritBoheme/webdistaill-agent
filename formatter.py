@@ -7,8 +7,12 @@ import logging
 from dataclasses import dataclass
 from typing import Optional
 
-from parser import ParsedContent
-from summarizer import SummaryResult
+try:
+    from .parser import ParsedContent
+    from .summarizer import SummaryResult
+except ImportError:
+    from parser import ParsedContent
+    from summarizer import SummaryResult
 
 logger = logging.getLogger(__name__)
 
@@ -80,27 +84,35 @@ class Formatter:
         if meta_lines:
             parts.append("\n".join(meta_lines) + "\n")
 
-        # AI Summary
         if summary:
-            parts.append("## AI Summary\n")
-            parts.append(f"{summary.summary}\n")
+            parts.append("## Distillation\n")
+            if summary.summary:
+                parts.append(f"{summary.summary}\n")
 
-            if summary.key_points:
-                parts.append("### Key Points\n")
-                for point in summary.key_points:
-                    parts.append(f"- {point}")
-                parts.append("")
+            self._append_list(parts, "Key Points", summary.key_points)
+            self._append_list(parts, "Key Concepts", summary.key_concepts)
+            self._append_list(parts, "Steps", summary.steps)
+            self._append_list(parts, "Warnings", summary.warnings)
 
+            compact = []
             if summary.topics:
-                parts.append(f"**Topics**: {', '.join(summary.topics)}\n")
-
+                compact.append(f"**Topics**: {', '.join(summary.topics)}")
             if summary.technical_terms:
-                parts.append(f"**Terms**: {', '.join(summary.technical_terms)}\n")
+                compact.append(f"**Terms**: {', '.join(summary.technical_terms)}")
+            if summary.code_languages:
+                compact.append(f"**Languages**: {', '.join(summary.code_languages)}")
+            if summary.api_references:
+                compact.append(f"**API References**: {', '.join(summary.api_references)}")
+            if summary.dependencies:
+                compact.append(f"**Dependencies**: {', '.join(summary.dependencies)}")
+            if compact:
+                parts.append("\n".join(compact) + "\n")
 
-            if summary.content_type:
-                parts.append(f"**Type**: {summary.content_type} | ")
-                parts.append(f"**Difficulty**: {summary.difficulty} | ")
-                parts.append(f"**Reading time**: ~{summary.reading_time_minutes} min\n")
+            meta = [value for value in [summary.content_type, summary.difficulty] if value]
+            if summary.reading_time_minutes:
+                meta.append(f"~{summary.reading_time_minutes} min")
+            if meta:
+                parts.append(f"**Profile**: {' | '.join(meta)}\n")
 
         # Headings outline
         if parsed.headings:
@@ -124,20 +136,40 @@ class Formatter:
     ) -> str:
         data = {
             "metadata": parsed.to_dict(),
+            "distillation": self._summary_to_dict(summary) if summary else None,
+            "headings": parsed.headings,
+            "links": parsed.links,
             "content": parsed.content,
         }
 
-        if summary:
-            data["ai_summary"] = {
-                "summary": summary.summary,
-                "key_points": summary.key_points,
-                "topics": summary.topics,
-                "technical_terms": summary.technical_terms,
-                "content_type": summary.content_type,
-                "difficulty": summary.difficulty,
-                "reading_time_minutes": summary.reading_time_minutes,
-            }
-
-        data["headings"] = parsed.headings
+        if data["distillation"] is None:
+            del data["distillation"]
 
         return json.dumps(data, ensure_ascii=False, indent=2)
+
+    @staticmethod
+    def _append_list(parts: list[str], title: str, items: list[str]) -> None:
+        if not items:
+            return
+        parts.append(f"### {title}\n")
+        for item in items:
+            parts.append(f"- {item}")
+        parts.append("")
+
+    @staticmethod
+    def _summary_to_dict(summary: SummaryResult) -> dict:
+        return {
+            "summary": summary.summary,
+            "key_points": summary.key_points,
+            "topics": summary.topics,
+            "technical_terms": summary.technical_terms,
+            "content_type": summary.content_type,
+            "difficulty": summary.difficulty,
+            "reading_time_minutes": summary.reading_time_minutes,
+            "key_concepts": summary.key_concepts,
+            "code_languages": summary.code_languages,
+            "api_references": summary.api_references,
+            "dependencies": summary.dependencies,
+            "steps": summary.steps,
+            "warnings": summary.warnings,
+        }

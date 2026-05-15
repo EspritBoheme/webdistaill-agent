@@ -124,17 +124,16 @@ class ContentParser:
         return headings
 
     def _extract_main_content(self, soup: BeautifulSoup) -> str:
-        # Try semantic containers first
-        for selector in ["article", "main", "[role='main']", ".post-content", ".entry-content"]:
-            container = soup.select_one(selector)
-            if container:
-                return container.get_text(separator="\n", strip=True)
+        candidates = soup.select("article, main, [role='main'], .post-content, .entry-content")
+        if not candidates:
+            candidates = soup.find_all(["section", "div", "body"])
 
-        # Fallback: largest text block
-        body = soup.find("body")
-        if body:
-            return body.get_text(separator="\n", strip=True)
-        return soup.get_text(separator="\n", strip=True)
+        best = max(
+            candidates,
+            key=lambda tag: len(tag.get_text(separator=" ", strip=True)),
+            default=soup,
+        )
+        return self._normalize_text(best.get_text(separator="\n", strip=True))
 
     def _extract_links(self, soup: BeautifulSoup, base_url: str) -> list[dict[str, str]]:
         links = []
@@ -151,3 +150,9 @@ class ContentParser:
                     "url": resolved,
                 })
         return links[:100]
+
+    @staticmethod
+    def _normalize_text(text: str) -> str:
+        text = re.sub(r"\n{3,}", "\n\n", text)
+        text = re.sub(r"[ \t]+", " ", text)
+        return text.strip()
