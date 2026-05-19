@@ -67,7 +67,7 @@ It is **not** a web scraper. It is **AI information workflow infrastructure** �
 - **Smart Cleaning** — Removes scripts, styles, navigation, ads to minimize token cost
 - **AI Summarization** — OpenAI-powered structured extraction with JSON output
 - **Multi-format Output** — Markdown and JSON
-- **Task Routing** — Four modes: `default`, `technical`, `raw`, `full`
+- **Task Routing** — Seven modes: text distillation + interactive visualizations (mindmap, timeline, glossary)
 - **Agent-ready** — Clean interfaces designed for LangGraph, CrewAI, and MCP integration
 
 ## Quick Start
@@ -95,6 +95,15 @@ python main.py https://example.com/article --format json --output result.json
 
 # Raw mode — no AI, just extraction
 python main.py https://example.com/article --mode raw --format markdown
+
+# Mindmap — interactive mind map HTML
+python main.py https://example.com/article --mode mindmap --output mindmap.html
+
+# Timeline — chronological event timeline HTML
+python main.py https://example.com/history --mode timeline --output timeline.html
+
+# Glossary — term glossary card grid HTML
+python main.py https://example.com/docs --mode glossary --output glossary.html
 ```
 
 ### Library
@@ -118,12 +127,15 @@ if result.ok:
 
 ## Pipeline Modes
 
-| Mode | Crawl | Clean | Parse | AI Summarize | Format |
-|---|:---:|:---:|:---:|:---:|:---:|
-| `default` | Yes | Yes | Yes | Yes | Yes |
-| `technical` | Yes | Yes | Yes | Yes (tech prompt) | Yes |
-| `raw` | Yes | Yes | Yes | **No** | Yes |
-| `full` | Yes | Yes | Yes | Yes | Yes |
+| Mode | Crawl | Clean | Parse | AI Summarize | Output | Notes |
+|---|:---:|:---:|:---:|:---:|:---:|---|
+| `default` | Yes | Yes | Yes | Yes | md / json | General article distillation |
+| `technical` | Yes | Yes | Yes | Yes (tech prompt) | md / json | Technical documentation extraction |
+| `raw` | Yes | Yes | Yes | **No** | md / json | Content-only extraction |
+| `full` | Yes | Yes | Yes | Yes | md / json | Full metadata + summary + links |
+| `mindmap` | Yes | Yes | Yes | Yes (mindmap prompt) | **html** | Interactive markmap HTML (Markmap) |
+| `timeline` | Yes | Yes | Yes | Yes (timeline prompt) | **html** | Pure CSS vertical timeline HTML |
+| `glossary` | Yes | Yes | Yes | Yes (glossary prompt) | **html** | Term card grid with search/filter |
 
 ## Project Structure
 
@@ -135,7 +147,7 @@ WebDistill/
 ├── cleaner.py           # HTML noise removal (scripts, styles, ads)
 ├── parser.py            # Content & metadata extraction
 ├── summarizer.py        # AI-powered structured summarization
-├── formatter.py         # Output formatting (Markdown / JSON)
+├── formatter.py         # Output formatting (Markdown / JSON / HTML)
 ├── config/
 │   └── settings.py      # Configuration management (dataclasses)
 ├── docs/

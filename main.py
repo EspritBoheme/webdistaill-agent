@@ -27,7 +27,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--mode",
-        choices=["default", "technical", "raw", "full"],
+        choices=["default", "technical", "raw", "full", "mindmap", "timeline", "glossary"],
         default="default",
         help="Processing mode (default: default)",
     )

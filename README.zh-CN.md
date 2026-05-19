@@ -69,7 +69,7 @@ WebDistill 将任意公开网页转化为干净、结构化的知识：
 - **智能清洗** — 去除脚本、样式、导航栏、广告，大幅减少 Token 消耗
 - **AI 总结** — 基于 OpenAI API 的结构化提取，JSON 格式输出
 - **多格式输出** — 支持 Markdown 和 JSON
-- **任务路由** — 四种模式：`default`、`technical`、`raw`、`full`
+- **任务路由** — 七种模式：文本蒸馏 + 交互式可视化（脑图、时间轴、术语表）
 - **Agent 就绪** — 预留 LangGraph、CrewAI、MCP 集成接口
 
 ## 快速开始
@@ -97,6 +97,15 @@ python main.py https://example.com/article --format json --output result.json
 
 # 原始模式 — 不调用 AI，仅提取
 python main.py https://example.com/article --mode raw --format markdown
+
+# 思维导图 — 生成交互式脑图 HTML
+python main.py https://example.com/article --mode mindmap --output mindmap.html
+
+# 时间轴 — 提取事件序列生成时间轴 HTML
+python main.py https://example.com/history --mode timeline --output timeline.html
+
+# 术语表 — 生成术语卡片网格 HTML
+python main.py https://example.com/docs --mode glossary --output glossary.html
 ```
 
 ### 作为库使用
@@ -120,12 +129,15 @@ if result.ok:
 
 ## 流水线模式
 
-| 模式 | 抓取 | 清洗 | 解析 | AI 总结 | 格式化 |
-|---|:---:|:---:|:---:|:---:|:---:|
-| `default` | Yes | Yes | Yes | Yes | Yes |
-| `technical` | Yes | Yes | Yes | Yes（技术提示词） | Yes |
-| `raw` | Yes | Yes | Yes | **否** | Yes |
-| `full` | Yes | Yes | Yes | Yes | Yes |
+| 模式 | 抓取 | 清洗 | 解析 | AI 总结 | 输出 | 说明 |
+|---|:---:|:---:|:---:|:---:|:---:|---|
+| `default` | Yes | Yes | Yes | Yes | md / json | 通用文章蒸馏 |
+| `technical` | Yes | Yes | Yes | Yes（技术提示词） | md / json | 技术文档结构化提取 |
+| `raw` | Yes | Yes | Yes | **否** | md / json | 仅提取内容 |
+| `full` | Yes | Yes | Yes | Yes | md / json | 完整元数据 + 摘要 + 链接 |
+| `mindmap` | Yes | Yes | Yes | Yes（脑图提示词） | **html** | 交互式脑图 HTML（Markmap） |
+| `timeline` | Yes | Yes | Yes | Yes（时间轴提示词） | **html** | 纯 CSS 垂直时间轴 HTML |
+| `glossary` | Yes | Yes | Yes | Yes（术语表提示词） | **html** | 术语卡片网格，带搜索和筛选 |
 
 ## 项目结构
 
@@ -137,7 +149,7 @@ WebDistill/
 ├── cleaner.py           # HTML 去噪（脚本/样式/广告）
 ├── parser.py            # 内容 & 元数据提取
 ├── summarizer.py        # AI 结构化总结
-├── formatter.py         # 输出格式化（Markdown / JSON）
+├── formatter.py         # 输出格式化（Markdown / JSON / HTML）
 ├── config/
 │   └── settings.py      # 配置管理（dataclass）
 ├── docs/

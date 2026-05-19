@@ -28,8 +28,11 @@ logger = logging.getLogger(__name__)
 class TaskMode(str, Enum):
     DEFAULT = "default"
     TECHNICAL = "technical"
-    RAW = "raw"           # No AI summarization
-    FULL = "full"         # All metadata + summary + links
+    RAW = "raw"              # No AI summarization
+    FULL = "full"            # All metadata + summary + links
+    MINDMAP = "mindmap"      # Interactive mindmap HTML (Markmap)
+    TIMELINE = "timeline"    # Chronological timeline HTML
+    GLOSSARY = "glossary"    # Term glossary card grid HTML
 
 
 @dataclass
@@ -92,9 +95,13 @@ class Router:
         output_format: str = "markdown",
         **options,
     ) -> Task:
+        task_mode = TaskMode(mode)
+        # Auto-set html format for visualization modes
+        if task_mode in (TaskMode.MINDMAP, TaskMode.TIMELINE, TaskMode.GLOSSARY):
+            output_format = "html"
         return Task(
             url=url,
-            mode=TaskMode(mode),
+            mode=task_mode,
             output_format=output_format,
             options=options,
         )
@@ -156,16 +163,21 @@ class Router:
 
     def _stage_summarize(self, task: Task) -> Task:
         summarizer = Summarizer(self.settings.summarizer)
+        mode = task.mode.value
+        if task.mode in (TaskMode.TECHNICAL, TaskMode.FULL):
+            mode = "technical"
+        elif task.mode == TaskMode.DEFAULT:
+            mode = "default"
         task.summary_result = summarizer.summarize(
             content=task.parsed_content.content,
             title=task.parsed_content.title,
             url=task.crawl_result.url,
-            mode="technical" if task.mode in (TaskMode.TECHNICAL, TaskMode.FULL) else "default",
+            mode=mode,
         )
         return task
 
     def _stage_format(self, task: Task) -> Task:
-        formatter = Formatter(output_format=task.output_format)
+        formatter = Formatter(output_format=task.output_format, mode=task.mode.value)
         task.formatted_output = formatter.format(
             parsed=task.parsed_content,
             summary=task.summary_result,
